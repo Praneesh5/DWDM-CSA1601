@@ -1,0 +1,68 @@
+# EXP-37: FP-Growth Rule Generation (Grocery Purchases Dataset)
+
+transactions <- list(
+  T1 = c("Bread", "Cheese", "Egg", "Juice"),
+  T2 = c("Bread", "Cheese", "Juice"),
+  T3 = c("Bread", "Milk", "Yogurt"),
+  T4 = c("Bread", "Juice", "Milk"),
+  T5 = c("Cheese", "Juice", "Milk")
+)
+
+N <- length(transactions)
+min_sup <- 2.5 # 50% of 5 -> count >= 3
+min_conf <- 0.75 # 75% confidence
+
+cat("=====================================================\n")
+cat("  EXP-37: FP-GROWTH RULE MINING (s=50%, c=75%)\n")
+cat("=====================================================\n\n")
+
+freq1 <- table(unlist(transactions))
+cat("1-Itemset Frequencies:\n")
+print(freq1)
+
+L1 <- freq1[freq1 >= 3] # 50% support count = 3
+cat("\nFrequent 1-Itemsets (minsup >= 3):\n")
+print(L1)
+
+ordered_items <- names(sort(L1, decreasing = TRUE))
+cat("\nFP-Header Item Frequency Order:", paste(ordered_items, collapse = " > "), "\n\n")
+
+cat("Transactions Ordered for FP-Tree:\n")
+for (id in names(transactions)) {
+  t <- transactions[[id]]
+  t_ord <- intersect(ordered_items, t)
+  cat(sprintf("%s: %s\n", id, paste(t_ord, collapse = " -> ")))
+}
+
+get_support <- function(itemset, trans_list) {
+  sum(sapply(trans_list, function(t) all(itemset %in% t)))
+}
+
+item_names <- names(L1)
+pairs <- combn(item_names, 2, simplify = FALSE)
+C2_sup <- sapply(pairs, get_support, trans_list = transactions)
+names(C2_sup) <- sapply(pairs, function(p) paste(p, collapse = ", "))
+L2_sup <- C2_sup[C2_sup >= 3]
+
+cat("\nFrequent 2-Itemsets (L2):\n")
+print(L2_sup)
+
+cat("\n--- Strong Association Rules (Confidence >= 75%) ---\n")
+rule_idx <- 0
+
+for (name in names(L2_sup)) {
+  items_in_set <- unlist(strsplit(name, ", "))
+  sup_AB <- L2_sup[name]
+  
+  for (i in 1:length(items_in_set)) {
+    lhs <- items_in_set[i]
+    rhs <- setdiff(items_in_set, lhs)
+    sup_A <- get_support(lhs, transactions)
+    conf <- sup_AB / sup_A
+    if (conf >= min_conf) {
+      rule_idx <- rule_idx + 1
+      cat(sprintf("Rule %2d: {%s} => {%s} [Supp: %d/5, Conf: %.1f%%]\n",
+                  rule_idx, lhs, rhs, sup_AB, conf * 100))
+    }
+  }
+}

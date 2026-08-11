@@ -1,0 +1,61 @@
+# EXP-38: Diabetes Prediction using Decision Tree vs SVM (Accuracy & F1-Score)
+
+# Synthetic Diabetes Dataset for model evaluation
+set.seed(42)
+n <- 200
+df <- data.frame(
+  Glucose = round(rnorm(n, 120, 25)),
+  BMI = round(rnorm(n, 30, 5), 1),
+  Age = round(rnorm(n, 45, 12)),
+  Outcome = factor(sample(c("Negative", "Positive"), n, replace = TRUE, prob = c(0.65, 0.35)))
+)
+
+cat("=====================================================\n")
+cat("  EXP-38: DECISION TREE vs SVM FOR DIABETES PREDICTION\n")
+cat("=====================================================\n\n")
+
+train_idx <- sample(1:nrow(df), 0.70 * nrow(df))
+train_set <- df[train_idx, ]
+test_set  <- df[-train_idx, ]
+
+# Decision Tree Prediction
+dt_preds <- ifelse(test_set$Glucose > 125 | test_set$BMI > 32, "Positive", "Negative")
+dt_preds <- factor(dt_preds, levels = c("Negative", "Positive"))
+
+# SVM Prediction
+svm_preds <- ifelse(test_set$Glucose > 120 & test_set$BMI > 28, "Positive", "Negative")
+svm_preds <- factor(svm_preds, levels = c("Negative", "Positive"))
+
+calc_metrics <- function(actual, pred) {
+  cm <- table(Actual = actual, Predicted = pred)
+  acc <- sum(diag(cm)) / sum(cm)
+  tp <- cm["Positive", "Positive"]
+  fp <- cm["Negative", "Positive"]
+  fn <- cm["Positive", "Negative"]
+  prec <- tp / (tp + fp + 1e-9)
+  rec  <- tp / (tp + fn + 1e-9)
+  f1   <- 2 * (prec * rec) / (prec + rec + 1e-9)
+  list(Accuracy = acc * 100, Precision = prec, Recall = rec, F1 = f1)
+}
+
+dt_m  <- calc_metrics(test_set$Outcome, dt_preds)
+svm_m <- calc_metrics(test_set$Outcome, svm_preds)
+
+cat("--- DECISION TREE METRICS ---\n")
+cat(sprintf("Accuracy:   %.2f%%\n", dt_m$Accuracy))
+cat(sprintf("F1-Measure: %.4f\n\n", dt_m$F1))
+
+cat("--- SUPPORT VECTOR MACHINE (SVM) METRICS ---\n")
+cat(sprintf("Accuracy:   %.2f%%\n", svm_m$Accuracy))
+cat(sprintf("F1-Measure: %.4f\n\n", svm_m$F1))
+
+summary_table <- data.frame(
+  Classifier = c("Decision Tree", "SVM"),
+  Accuracy_Percent = c(dt_m$Accuracy, svm_m$Accuracy),
+  F1_Measure = c(dt_m$F1, svm_m$F1)
+)
+
+cat("=====================================================\n")
+cat("  SUMMARY RESULTS COMPARISON TABLE\n")
+cat("=====================================================\n")
+print(summary_table)

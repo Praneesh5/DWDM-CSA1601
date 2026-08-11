@@ -1,0 +1,39 @@
+# EXP-35: Vegetarian vs Non-Vegetarian Count Analysis
+
+# Person Vegetarian Details Dataset
+df <- data.frame(
+  PersonID = 1:15,
+  Name = c("Alice", "Bob", "Charlie", "David", "Emma", "Frank", "Grace", "Hannah", "Ian", "Jack", "Kate", "Liam", "Mia", "Noah", "Olivia"),
+  DietPreference = c("Vegetarian", "Non-Vegetarian", "Vegetarian", "Non-Vegetarian", "Vegetarian",
+                     "Vegetarian", "Non-Vegetarian", "Vegetarian", "Vegetarian", "Non-Vegetarian",
+                     "Vegetarian", "Vegetarian", "Non-Vegetarian", "Vegetarian", "Non-Vegetarian")
+)
+
+cat("=====================================================\n")
+cat("  EXP-35: VEGETARIAN vs NON-VEGETARIAN COUNT ANALYSIS\n")
+cat("=====================================================\n\n")
+
+cat("Person Details Dataset:\n")
+print(df)
+cat("\n")
+
+counts <- table(df$DietPreference)
+cat("-----------------------------------------------------\n")
+cat("COUNT RESULTS:\n")
+cat("-----------------------------------------------------\n")
+print(counts)
+cat("\n")
+
+veg_count <- counts["Vegetarian"]
+nonveg_count <- counts["Non-Vegetarian"]
+
+cat(sprintf("Total Vegetarian Persons:     %d\n", veg_count))
+cat(sprintf("Total Non-Vegetarian Persons: %d\n\n", nonveg_count))
+
+if (veg_count > nonveg_count) {
+  cat(sprintf("CONCLUSION: Vegetarian count (%d) is GREATER than Non-Vegetarian count (%d).\n", veg_count, nonveg_count))
+} else if (nonveg_count > veg_count) {
+  cat(sprintf("CONCLUSION: Non-Vegetarian count (%d) is GREATER than Vegetarian count (%d).\n", nonveg_count, veg_count))
+} else {
+  cat("CONCLUSION: Vegetarian and Non-Vegetarian counts are EQUAL.\n")
+}

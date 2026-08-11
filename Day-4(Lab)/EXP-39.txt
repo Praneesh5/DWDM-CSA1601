@@ -1,0 +1,46 @@
+# EXP-39: Student Exam Marks Partitioning (Equi-depth, Equi-width, Clustering)
+
+marks <- c(55, 60, 71, 63, 55, 65, 50, 55, 58, 59, 61, 63, 65, 67, 71, 72, 75)
+sorted_marks <- sort(marks)
+
+cat("=====================================================\n")
+cat("  EXP-39: MARKS PARTITIONING & HISTOGRAM PLOTS\n")
+cat("=====================================================\n")
+cat("Sorted Marks:", paste(sorted_marks, collapse = ", "), "\n")
+cat("Total Marks Count:", length(sorted_marks), "\n\n")
+
+# (a) Equal-Frequency Partitioning (3 Bins)
+bins_depth <- split(sorted_marks, ceiling(seq_along(sorted_marks) / (length(sorted_marks) / 3)))
+cat("--- (a) Equal-Frequency (Equi-Depth) Partitioning (3 Bins) ---\n")
+for (i in 1:length(bins_depth)) {
+  cat(sprintf("Bin %d: [%s] (Count = %d)\n", i, paste(bins_depth[[i]], collapse = ", "), length(bins_depth[[i]])))
+}
+cat("\n")
+
+# (b) Equal-Width Partitioning (3 Bins)
+min_m <- min(sorted_marks)
+max_m <- max(sorted_marks)
+w <- (max_m - min_m) / 3
+cat("--- (b) Equal-Width Partitioning (Bin Width = ", round(w, 2), ") ---\n", sep="")
+bin1 <- sorted_marks[sorted_marks >= min_m & sorted_marks < min_m + w]
+bin2 <- sorted_marks[sorted_marks >= min_m + w & sorted_marks < min_m + 2*w]
+bin3 <- sorted_marks[sorted_marks >= min_m + 2*w & sorted_marks <= max_m]
+cat(sprintf("Bin 1 [%.1f - %.1f): [%s]\n", min_m, min_m+w, paste(bin1, collapse=", ")))
+cat(sprintf("Bin 2 [%.1f - %.1f): [%s]\n", min_m+w, min_m+2*w, paste(bin2, collapse=", ")))
+cat(sprintf("Bin 3 [%.1f - %.1f]: [%s]\n\n", min_m+2*w, max_m, paste(bin3, collapse=", ")))
+
+# (c) Clustering Partitioning (K-Means, K=3)
+set.seed(123)
+km <- kmeans(sorted_marks, centers = 3)
+cat("--- (c) K-Means Clustering Partitioning (3 Clusters) ---\n")
+for (c in 1:3) {
+  c_pts <- sorted_marks[km$cluster == c]
+  cat(sprintf("Cluster %d (Center = %.2f): [%s]\n", c, km$centers[c], paste(c_pts, collapse=", ")))
+}
+
+# Plot Histogram
+png("marks_histogram_exp39.png", width=600, height=450)
+hist(sorted_marks, breaks = seq(45, 80, 5), col = "lightblue", border = "black",
+     main = "Histogram of Student Exam Marks", xlab = "Marks Scored", ylab = "Frequency")
+dev.off()
+cat("\nHistogram plot saved as 'marks_histogram_exp39.png'\n")

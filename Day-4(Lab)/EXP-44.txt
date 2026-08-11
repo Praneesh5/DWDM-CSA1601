@@ -1,0 +1,52 @@
+# EXP-44: MONKEY/DONKEY Apriori vs FP-Growth Metarule Analysis
+
+transactions <- list(
+  T100 = c("M", "O", "N", "K", "E", "Y"),
+  T200 = c("D", "O", "N", "K", "E", "Y"),
+  T300 = c("M", "A", "K", "E"),
+  T400 = c("M", "U", "C", "K", "Y"),
+  T500 = c("C", "O", "K", "I", "E")
+)
+
+cat("=====================================================\n")
+cat("  EXP-44: APRIORI vs FP-GROWTH METARULE MINING\n")
+cat("=====================================================\n\n")
+
+cat("--- (a) Frequent Itemsets Comparison ---\n")
+freq1 <- table(unlist(transactions))
+L1 <- freq1[freq1 >= 2]
+cat("Frequent 1-Itemsets:\n")
+print(L1)
+
+get_support <- function(itemset, trans_list) {
+  sum(sapply(trans_list, function(t) all(itemset %in% t)))
+}
+
+freq_items <- names(L1)
+triples <- combn(freq_items, 3, simplify = FALSE)
+C3_sup <- sapply(triples, get_support, trans_list = transactions)
+names(C3_sup) <- sapply(triples, function(p) paste(p, collapse = ", "))
+L3_sup <- C3_sup[C3_sup >= 2]
+
+cat("\nFrequent 3-Itemsets (L3):\n")
+print(L3_sup)
+
+cat("\n--- (b) Strong Metarules: buys(X, item1) AND buys(X, item2) => buys(X, item3) ---\n")
+rule_idx <- 0
+
+for (name in names(L3_sup)) {
+  items_in_set <- unlist(strsplit(name, ", "))
+  sup_ABC <- L3_sup[name]
+  
+  combos <- combn(items_in_set, 2, simplify = FALSE)
+  for (lhs in combos) {
+    rhs <- setdiff(items_in_set, lhs)
+    sup_A <- get_support(lhs, transactions)
+    conf <- sup_ABC / sup_A
+    if (conf >= 0.80) {
+      rule_idx <- rule_idx + 1
+      cat(sprintf("Metarule %2d: buys(X, '%s') ^ buys(X, '%s') => buys(X, '%s') [Conf: %.0f%%]\n",
+                  rule_idx, lhs[1], lhs[2], rhs, conf * 100))
+    }
+  }
+}

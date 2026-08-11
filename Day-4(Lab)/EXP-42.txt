@@ -1,0 +1,37 @@
+# EXP-42: Normalization Techniques on Batsman Strike-Rates
+
+strike_rates <- c(100, 70, 60, 90, 90)
+
+cat("=====================================================\n")
+cat("  EXP-42: NORMALIZATION OF BATSMAN STRIKE-RATES\n")
+cat("=====================================================\n")
+cat("Original Strike-Rates:", paste(strike_rates, collapse = ", "), "\n\n")
+
+# 1. Min-Max Normalization (min=0, max=1)
+min_val <- min(strike_rates)
+max_val <- max(strike_rates)
+min_max_norm <- (strike_rates - min_val) / (max_val - min_val)
+cat("1. Min-Max Normalization (0 to 1):\n")
+print(round(min_max_norm, 4))
+cat("\n")
+
+# 2. Z-Score Normalization (Standard Deviation)
+mean_val <- mean(strike_rates)
+sd_val   <- sd(strike_rates)
+z_score_norm <- (strike_rates - mean_val) / sd_val
+cat("2. Z-Score Normalization (using SD):\n")
+print(round(z_score_norm, 4))
+cat("\n")
+
+# 3. Z-Score Normalization (Mean Absolute Deviation MAD)
+mad_val <- mean(abs(strike_rates - mean_val))
+z_score_mad <- (strike_rates - mean_val) / mad_val
+cat("3. Z-Score Normalization (using MAD):\n")
+print(round(z_score_mad, 4))
+cat("\n")
+
+# 4. Normalization by Decimal Scaling
+j <- ceiling(log10(max(abs(strike_rates))))
+decimal_scaling <- strike_rates / (10^j)
+cat(sprintf("4. Normalization by Decimal Scaling (j = %d):\n", j))
+print(round(decimal_scaling, 4))
