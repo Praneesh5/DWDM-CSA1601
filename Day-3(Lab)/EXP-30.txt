@@ -1,0 +1,82 @@
+# EXP-30: Apriori and FP-Growth Algorithm (Customer Transactions)
+
+transactions <- list(
+  T0001 = c("a", "d", "e"),
+  T0024 = c("a", "b", "c", "e"),
+  T0012 = c("a", "b", "d", "e"),
+  T0031 = c("a", "c", "d", "e"),
+  T0015 = c("b", "c", "e"),
+  T0022 = c("b", "d", "e"),
+  T0029 = c("c", "d"),
+  T0040 = c("a", "b", "c"),
+  T0033 = c("a", "d", "e"),
+  T0038 = c("a", "b", "e")
+)
+
+N <- length(transactions)
+min_sup <- 3
+min_conf <- 0.50
+
+cat("========================================\n")
+cat("  EXP-30: APRIORI AND FP-GROWTH ALGORITHM\n")
+cat("========================================\n")
+cat("Total Transactions:", N, "\n")
+cat("Minimum Support Count:", min_sup, "(30%)\n")
+cat("Minimum Confidence: 50%\n\n")
+
+items <- unlist(transactions)
+freq1 <- table(items)
+cat("--- 1-Itemsets Support Count (C1) ---\n")
+print(freq1)
+
+L1 <- freq1[freq1 >= min_sup]
+cat("\n--- Frequent 1-Itemsets (L1) ---\n")
+print(L1)
+
+get_support <- function(itemset, trans_list) {
+  sum(sapply(trans_list, function(t) all(itemset %in% t)))
+}
+
+item_names <- names(L1)
+pairs <- combn(item_names, 2, simplify = FALSE)
+C2_sup <- sapply(pairs, get_support, trans_list = transactions)
+names(C2_sup) <- sapply(pairs, function(p) paste(p, collapse = ", "))
+
+cat("\n--- Frequent 2-Itemsets (L2) ---\n")
+L2_sup <- C2_sup[C2_sup >= min_sup]
+print(L2_sup)
+
+triples <- combn(item_names, 3, simplify = FALSE)
+C3_sup <- sapply(triples, get_support, trans_list = transactions)
+names(C3_sup) <- sapply(triples, function(p) paste(p, collapse = ", "))
+L3_sup <- C3_sup[C3_sup >= min_sup]
+
+cat("\n--- Frequent 3-Itemsets (L3) ---\n")
+print(L3_sup)
+
+cat("\n--- FP-Growth Header Table Order ---\n")
+ordered_items <- names(sort(L1, decreasing = TRUE))
+cat("Item Order:", paste(ordered_items, collapse = " > "), "\n")
+
+cat("\n--- Association Rules (Conf >= 50%) ---\n")
+all_frequent <- c(L2_sup, L3_sup)
+rule_count <- 0
+
+for (name in names(all_frequent)) {
+  items_in_set <- unlist(strsplit(name, ", "))
+  sup_AB <- all_frequent[name]
+  len <- length(items_in_set)
+  for (i in 1:(len - 1)) {
+    lhs_combos <- combn(items_in_set, i, simplify = FALSE)
+    for (lhs in lhs_combos) {
+      rhs <- setdiff(items_in_set, lhs)
+      sup_A <- get_support(lhs, transactions)
+      conf <- sup_AB / sup_A
+      if (conf >= min_conf) {
+        rule_count <- rule_count + 1
+        cat(sprintf("Rule %2d: {%s} => {%s} [Supp: %d/10, Conf: %.1f%%]\n",
+                    rule_count, paste(lhs, collapse=","), paste(rhs, collapse=","), sup_AB, conf * 100))
+      }
+    }
+  }
+}
