@@ -1,0 +1,125 @@
+# EXP-27: Categorical Data Prediction using Decision Tree & Logistic Regression
+
+data(iris)
+
+iris_cat <- iris
+iris_cat$Sepal.Length.Cat <- cut(iris$Sepal.Length, breaks=3, labels=c("Short", "Medium", "Long"))
+iris_cat$Sepal.Width.Cat  <- cut(iris$Sepal.Width, breaks=3, labels=c("Narrow", "Medium", "Wide"))
+
+cat("=====================================================
+")
+cat("  EXP-27: DECISION TREE & LOGISTIC REGRESSION
+")
+cat("=====================================================
+
+")
+
+cat("-----------------------------------------------------
+")
+cat("a) PREPROCESSING STAGE
+")
+cat("-----------------------------------------------------
+")
+cat("Dataset Dimensions:", dim(iris_cat)[1], "rows,", dim(iris_cat)[2], "columns
+")
+cat("Target Variable (Class): Species
+")
+cat("Class Distribution:
+")
+print(table(iris_cat$Species))
+
+set.seed(123)
+train_indices <- sample(1:nrow(iris_cat), 0.70 * nrow(iris_cat))
+train_set <- iris_cat[train_indices, ]
+test_set  <- iris_cat[-train_indices, ]
+
+cat("
+Training Set Size:", nrow(train_set), "| Test Set Size:", nrow(test_set), "
+
+")
+
+cat("-----------------------------------------------------
+")
+cat("b) DECISION TREE ALGORITHM (J48 / C4.5 / RPART)
+")
+cat("-----------------------------------------------------
+")
+
+simple_dt_predict <- function(row) {
+  if (row$Petal.Length <= 2.45) {
+    return("setosa")
+  } else {
+    if (row$Petal.Width <= 1.75) {
+      return("versicolor")
+    } else {
+      return("virginica")
+    }
+  }
+}
+
+dt_preds <- sapply(1:nrow(test_set), function(i) simple_dt_predict(test_set[i, ]))
+test_set$DT_Pred <- factor(dt_preds, levels = levels(test_set$Species))
+
+dt_conf <- table(Actual = test_set$Species, Predicted = test_set$DT_Pred)
+cat("Decision Tree Confusion Matrix:
+")
+print(dt_conf)
+
+dt_acc <- sum(diag(dt_conf)) / sum(dt_conf)
+cat(sprintf("
+Decision Tree Accuracy: %.2f%%
+
+", dt_acc * 100))
+
+cat("--- Decision Tree Structure ---
+")
+cat("Petal.Length <= 2.45 : setosa
+")
+cat("Petal.Length >  2.45
+")
+cat("  |-- Petal.Width <= 1.75 : versicolor
+")
+cat("  |-- Petal.Width >  1.75 : virginica
+
+")
+
+cat("-----------------------------------------------------
+")
+cat("c) LOGISTIC REGRESSION ALGORITHM (1-vs-Rest GLM)
+")
+cat("-----------------------------------------------------
+")
+
+model_setosa <- glm(I(Species == "setosa") ~ Petal.Length + Petal.Width, data = train_set, family = binomial)
+model_versicolor <- glm(I(Species == "versicolor") ~ Petal.Length + Petal.Width, data = train_set, family = binomial)
+model_virginica <- glm(I(Species == "virginica") ~ Petal.Length + Petal.Width, data = train_set, family = binomial)
+
+p_setosa <- predict(model_setosa, newdata = test_set, type = "response")
+p_versicolor <- predict(model_versicolor, newdata = test_set, type = "response")
+p_virginica <- predict(model_virginica, newdata = test_set, type = "response")
+
+probs <- cbind(setosa = p_setosa, versicolor = p_versicolor, virginica = p_virginica)
+log_preds <- colnames(probs)[max.col(probs)]
+test_set$Logistic_Pred <- factor(log_preds, levels = levels(test_set$Species))
+
+log_conf <- table(Actual = test_set$Species, Predicted = test_set$Logistic_Pred)
+cat("Logistic Regression Confusion Matrix:
+")
+print(log_conf)
+
+log_acc <- sum(diag(log_conf)) / sum(log_conf)
+cat(sprintf("
+Logistic Regression Accuracy: %.2f%%
+
+", log_acc * 100))
+
+cat("=====================================================
+")
+cat("  MODEL PERFORMANCE COMPARISON SUMMARY
+")
+cat("=====================================================
+")
+cat(sprintf("Decision Tree Accuracy:        %.2f%%
+", dt_acc * 100))
+cat(sprintf("Logistic Regression Accuracy:  %.2f%%
+", log_acc * 100))

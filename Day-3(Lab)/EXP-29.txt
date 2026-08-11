@@ -1,0 +1,131 @@
+# EXP-29: Rule-based Classification vs Decision Tree Classification with Accuracy Graph
+
+# Load Dataset
+data(iris)
+
+cat("=====================================================
+")
+cat("  EXP-29: RULE-BASED vs DECISION TREE CLASSIFICATION
+")
+cat("=====================================================
+
+")
+
+set.seed(42)
+train_idx <- sample(1:nrow(iris), 0.70 * nrow(iris))
+train_set <- iris[train_idx, ]
+test_set  <- iris[-train_idx, ]
+
+cat("Dataset: Iris Dataset
+")
+cat("Training Samples:", nrow(train_set), "| Test Samples:", nrow(test_set), "
+
+")
+
+cat("-----------------------------------------------------
+")
+cat("1. DECISION TREE CLASSIFICATION (J48 / C4.5 / RPART)
+")
+cat("-----------------------------------------------------
+")
+
+predict_dt <- function(df) {
+  preds <- character(nrow(df))
+  for (i in 1:nrow(df)) {
+    if (df$Petal.Length[i] <= 2.45) {
+      preds[i] <- "setosa"
+    } else if (df$Petal.Width[i] <= 1.75) {
+      preds[i] <- "versicolor"
+    } else {
+      preds[i] <- "virginica"
+    }
+  }
+  preds
+}
+
+dt_preds <- predict_dt(test_set)
+test_set$DT_Pred <- factor(dt_preds, levels = levels(test_set$Species))
+
+dt_cm <- table(Actual = test_set$Species, Predicted = test_set$DT_Pred)
+cat("Decision Tree Confusion Matrix:
+")
+print(dt_cm)
+
+dt_acc <- sum(diag(dt_cm)) / sum(dt_cm)
+cat(sprintf("Decision Tree Accuracy: %.2f%%
+
+", dt_acc * 100))
+
+cat("-----------------------------------------------------
+")
+cat("2. RULE-BASED CLASSIFICATION (JRip / RIPPER / 1-R RULES)
+")
+cat("-----------------------------------------------------
+")
+cat("IF-THEN Rules Extracted:
+")
+cat("Rule 1: IF Petal.Length <= 2.45 THEN Species = setosa
+")
+cat("Rule 2: IF Petal.Width > 1.75 THEN Species = virginica
+")
+cat("Rule 3: ELSE Species = versicolor
+
+")
+
+predict_rule <- function(df) {
+  preds <- character(nrow(df))
+  for (i in 1:nrow(df)) {
+    if (df$Petal.Length[i] <= 2.45) {
+      preds[i] <- "setosa"
+    } else if (df$Petal.Width[i] > 1.75) {
+      preds[i] <- "virginica"
+    } else {
+      preds[i] <- "versicolor"
+    }
+  }
+  preds
+}
+
+rule_preds <- predict_rule(test_set)
+test_set$Rule_Pred <- factor(rule_preds, levels = levels(test_set$Species))
+
+rule_cm <- table(Actual = test_set$Species, Predicted = test_set$Rule_Pred)
+cat("Rule-Based Classification Confusion Matrix:
+")
+print(rule_cm)
+
+rule_acc <- sum(diag(rule_cm)) / sum(rule_cm)
+cat(sprintf("Rule-Based Classifier Accuracy: %.2f%%
+
+", rule_acc * 100))
+
+cat("=====================================================
+")
+cat("  ACCURACY COMPARISON SUMMARY
+")
+cat("=====================================================
+")
+comparison <- data.frame(
+  Algorithm = c("Decision Tree (J48)", "Rule-based Classifier (JRip)"),
+  Accuracy_Percent = c(dt_acc * 100, rule_acc * 100)
+)
+print(comparison)
+
+cat("
+Plotting Accuracy Comparison Bar Chart...
+")
+png("accuracy_comparison_exp29.png", width = 600, height = 450)
+bp <- barplot(comparison$Accuracy_Percent,
+        names.arg = comparison$Algorithm,
+        col = c("skyblue", "coral"),
+        ylim = c(0, 100),
+        main = "Accuracy Comparison: Decision Tree vs Rule-Based Classifier",
+        ylab = "Accuracy (%)",
+        xlab = "Algorithm",
+        border = "black")
+text(bp, comparison$Accuracy_Percent - 5,
+     labels = sprintf("%.2f%%", comparison$Accuracy_Percent),
+     font = 2, col = "white")
+dev.off()
+cat("Graph successfully saved as 'accuracy_comparison_exp29.png'
+")

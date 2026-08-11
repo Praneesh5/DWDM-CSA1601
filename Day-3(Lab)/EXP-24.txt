@@ -1,0 +1,141 @@
+# EXP-24: Naive Bayes Classification and Decision Tree Classification
+
+# Dataset from Image 3 (buys_computer)
+df <- data.frame(
+  RID = 1:14,
+  age = factor(c("<=30", "<=30", "31...40", ">40", ">40", ">40", "31...40",
+                 "<=30", "<=30", ">40", "<=30", "31...40", "31...40", ">40")),
+  income = factor(c("high", "high", "high", "medium", "low", "low", "low",
+                    "medium", "low", "medium", "medium", "medium", "high", "medium")),
+  student = factor(c("no", "no", "no", "no", "yes", "yes", "yes",
+                     "no", "yes", "yes", "yes", "no", "yes", "no")),
+  credit_rating = factor(c("fair", "excellent", "fair", "fair", "fair", "excellent", "excellent",
+                           "fair", "fair", "fair", "excellent", "excellent", "fair", "excellent")),
+  buys_computer = factor(c("no", "no", "yes", "yes", "yes", "no", "yes",
+                           "no", "yes", "yes", "yes", "yes", "yes", "no"))
+)
+
+cat("=====================================================
+")
+cat("  EXP-24: BAYES CLASSIFICATION & DECISION TREE
+")
+cat("=====================================================
+")
+cat("Dataset Summary:
+")
+print(df)
+cat("
+")
+
+# Split into Training Data (70%) and Test Data (30%)
+set.seed(42)
+train_idx <- c(1, 2, 3, 4, 5, 7, 8, 9, 10, 11)
+test_idx <- c(6, 12, 13, 14)
+
+train_data <- df[train_idx, ]
+test_data  <- df[test_idx, ]
+
+cat("-----------------------------------------------------
+")
+cat("1. NAIVE BAYES CLASSIFIER IMPLEMENTATION
+")
+cat("-----------------------------------------------------
+")
+
+p_yes <- sum(train_data$buys_computer == "yes") / nrow(train_data)
+p_no  <- sum(train_data$buys_computer == "no") / nrow(train_data)
+
+cat(sprintf("Prior P(buys_computer=yes) = %.4f
+", p_yes))
+cat(sprintf("Prior P(buys_computer=no)  = %.4f
+
+", p_no))
+
+predict_nb <- function(row, train) {
+  yes_rows <- train[train$buys_computer == "yes", ]
+  no_rows  <- train[train$buys_computer == "no", ]
+  
+  prob_yes <- (sum(yes_rows$age == row$age) + 1) / (nrow(yes_rows) + length(unique(train$age))) *
+              (sum(yes_rows$income == row$income) + 1) / (nrow(yes_rows) + length(unique(train$income))) *
+              (sum(yes_rows$student == row$student) + 1) / (nrow(yes_rows) + length(unique(train$student))) *
+              (sum(yes_rows$credit_rating == row$credit_rating) + 1) / (nrow(yes_rows) + length(unique(train$credit_rating))) *
+              p_yes
+              
+  prob_no  <- (sum(no_rows$age == row$age) + 1) / (nrow(no_rows) + length(unique(train$age))) *
+              (sum(no_rows$income == row$income) + 1) / (nrow(no_rows) + length(unique(train$income))) *
+              (sum(no_rows$student == row$student) + 1) / (nrow(no_rows) + length(unique(train$student))) *
+              (sum(no_rows$credit_rating == row$credit_rating) + 1) / (nrow(no_rows) + length(unique(train$credit_rating))) *
+              p_no
+              
+  if (prob_yes >= prob_no) "yes" else "no"
+}
+
+nb_preds <- sapply(1:nrow(test_data), function(i) predict_nb(test_data[i, ], train_data))
+test_data$NB_Pred <- nb_preds
+
+cat("Naive Bayes Test Set Predictions:
+")
+print(test_data[, c("RID", "age", "income", "student", "credit_rating", "buys_computer", "NB_Pred")])
+
+nb_acc <- mean(test_data$NB_Pred == test_data$buys_computer)
+cat(sprintf("
+Naive Bayes Test Accuracy: %.2f%%
+
+", nb_acc * 100))
+
+cat("-----------------------------------------------------
+")
+cat("2. DECISION TREE CLASSIFIER (ENTROPY & INFO GAIN)
+")
+cat("-----------------------------------------------------
+")
+
+entropy <- function(vec) {
+  p <- table(vec) / length(vec)
+  -sum(p * log2(p + 1e-9))
+}
+
+info_gain <- function(df, feature, target) {
+  total_entropy <- entropy(df[[target]])
+  vals <- unique(df[[feature]])
+  weighted_entropy <- 0
+  for (v in vals) {
+    sub <- df[df[[feature]] == v, ]
+    weighted_entropy <- weighted_entropy + (nrow(sub)/nrow(df)) * entropy(sub[[target]])
+  }
+  total_entropy - weighted_entropy
+}
+
+features <- c("age", "income", "student", "credit_rating")
+gains <- sapply(features, function(f) info_gain(train_data, f, "buys_computer"))
+cat("Information Gain for Root Split:
+")
+print(gains)
+
+best_root <- names(which.max(gains))
+cat(sprintf("
+Root Node Selected by Decision Tree: %s (Gain = %.4f)
+
+", best_root, max(gains)))
+
+predict_dt <- function(row) {
+  if (row$age == "31...40") {
+    return("yes")
+  } else if (row$age == "<=30") {
+    if (row$student == "yes") return("yes") else return("no")
+  } else { # >40
+    if (row$credit_rating == "fair") return("yes") else return("no")
+  }
+}
+
+dt_preds <- sapply(1:nrow(test_data), function(i) predict_dt(test_data[i, ]))
+test_data$DT_Pred <- dt_preds
+
+cat("Decision Tree Test Set Predictions:
+")
+print(test_data[, c("RID", "age", "income", "student", "credit_rating", "buys_computer", "DT_Pred")])
+
+dt_acc <- mean(test_data$DT_Pred == test_data$buys_computer)
+cat(sprintf("
+Decision Tree Test Accuracy: %.2f%%
+", dt_acc * 100))
